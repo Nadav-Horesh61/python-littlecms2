@@ -7,7 +7,7 @@ Created on Sun May 14 17:27:53 2017
 @author: nadav
 """
 
-from lcms2_header import *
+from .lcms2_header import *
 import ctypes as CT
 import numpy as np
 # import littlecms as LC
@@ -19,12 +19,16 @@ import  faulthandler
 faulthandler.enable()
 import threading
 import platform
+import os
 
 UNTRASH=[]
 
 def physical_cpu_cores()->int:
     if platform.system() != 'Linux':
-        return 0
+        # return the number of logical cpus.
+        # the portable methos to get the number of physycal cps is to use psutil
+        # >> psutil.cpu_count(logical=False)
+        return os.cpu_count() 
     cpuinfo = dict(map(str.strip, line.split(':'))
                    for line in open('/proc/cpuinfo')
                    if ':' in line)
@@ -63,7 +67,11 @@ cmsBool = CT.c_int64
 
 #cmsProfileClassSignature = CT.c_char * 4
 
-def init(lcms2_lib:str='liblcms2.so')->None:
+def init(lcms2_lib:str='liblcms2.so')->str:
+    '''
+    This function must be called first before using the littlecms functions.
+    You can optionally provide the full path to the required liblcms2 dll
+    '''
     lib = pl.Path(lcms2_lib)
     # Test if there is /local/lib version and use it if there is.
     if lib.parent == '.':
@@ -183,6 +191,7 @@ def init(lcms2_lib:str='liblcms2.so')->None:
     # cmsBool cmsIsToneCurveLinear(const cmsToneCurve* Curve);
     # Release all definitions to the global scope
     globals().update(locals())
+    return lcms2_lib
 
 
 def cmsD50_XYZ()->cmsCIEXYZ:
